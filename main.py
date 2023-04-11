@@ -28,7 +28,7 @@ from modelostransferlearning import ModeloTransferLearning
 # Dados globais
 img_size = (224, 224)
 batch_size = 32
-epochs = 20
+epochs = 1
 
 
 # Carregamento das imagens da amostra
@@ -50,7 +50,7 @@ train_dataset = tf.keras.utils.image_dataset_from_directory(
     path_treinamento,
     labels="inferred",
     label_mode="categorical",
-    subset="train",
+    subset="training",
     validation_split=0.2,
     seed=321,
     image_size=(img_size[0], img_size[1]),
