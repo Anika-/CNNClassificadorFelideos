@@ -70,7 +70,7 @@ validation_dataset = tf.keras.utils.image_dataset_from_directory(
     path_treinamento,
     labels="inferred",
     label_mode="categorical",
-    subset=None,
+    subset="validation",
     validation_split=0.2,
     seed=321,
     image_size=(img_size[0], img_size[1]),
@@ -110,7 +110,7 @@ test_pred = np.argmax(predicao_vgg16, axis=1)
 
 test_labels = np.concatenate([y for x, y in test_dataset], axis=0)
 
-test_labels = np.argmax(test_labels, axis=1)
+test_labels = np.argmax(test_labels.__array__(), axis=1)
 
 # Relatorio metrico
 print(classification_report(test_labels, test_pred, labels=test_dataset.class_names, zero_division=0))

@@ -24,7 +24,7 @@ class ModeloTransferLearning(object):
 
         vgg16model.compile(loss="categorical_crossentropy",
                            optimizer="rmsprop",
-                           metrics=["accuracy", tf.keras.metrics.Precision(zero_division=0), tf.keras.metrics.Recall(zero_division=0)])
+                           metrics=["accuracy", tf.keras.metrics.Precision(), tf.keras.metrics.Recall()])
         return vgg16model
 
     def novaredevgg19(self, numero_classes):
@@ -44,5 +44,5 @@ class ModeloTransferLearning(object):
 
         vgg19model.compile(loss="categorical_crossentropy",
                            optimizer="rmsprop",
-                           metrics=["accuracy", tf.keras.metrics.Precision(zero_division=0), tf.keras.metrics.Recall(zero_division=0)])
+                           metrics=["accuracy", tf.keras.metrics.Precision(), tf.keras.metrics.Recall()])
         return vgg19model
