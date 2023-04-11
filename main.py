@@ -28,24 +28,33 @@ from modelostransferlearning import ModeloTransferLearning
 # Dados globais
 img_size = (224, 224)
 batch_size = 32
-epochs = 1
+epochs = 4
 
 
 # Carregamento das imagens da amostra
 path_treinamento = pathlib.Path(os.path.join("E:/USP_ESALQ", "ProjetoClassificacaoGatos", "Dados", "train"))
-
-path_validacao = pathlib.Path(os.path.join("E:/USP_ESALQ", "ProjetoClassificacaoGatos", "Dados", "valid"))
-
+#path_validacao = pathlib.Path(os.path.join("E:/USP_ESALQ", "ProjetoClassificacaoGatos", "Dados", "valid"))
 path_teste = pathlib.Path(os.path.join("E:/USP_ESALQ", "ProjetoClassificacaoGatos", "Dados", "test"))
-"""
-dados_treinamento = ImageDataGenerator().flow_from_directory(path_treinamento, target_size=img_size)
-dados_teste = ImageDataGenerator().flow_from_directory(path_teste, target_size=img_size)
-dados_validacao = ImageDataGenerator().flow_from_directory(path_validacao, target_size=img_size)
-"""
+
+gerador_aumento_dados = ImageDataGenerator(
+    rotation_range=30,  # rotation
+    width_shift_range=0.2,  # horizontal shift
+    height_shift_range=0.2,  # vertical shift
+    zoom_range=0.2,  # zoom
+    horizontal_flip=True  # horizontal flip
+)
+
+dados_treinamento = gerador_aumento_dados.flow_from_directory(path_treinamento, target_size=img_size, class_mode='categorical',shuffle=True, subset='training',)
+dados_validacao = gerador_aumento_dados.flow_from_directory(path_treinamento, target_size=img_size, class_mode='categorical',shuffle=True, subset='validation',)
+dados_teste = gerador_aumento_dados.flow_from_directory(path_teste, target_size=img_size, class_mode='categorical',shuffle=False)
+
 image_count = len(list(path_treinamento.glob('*/*.jpg')))
 print("total de imagens de treino:", image_count)
+nome_classes = os.listdir(path_treinamento)
 print("classes:", os.listdir(path_treinamento))
 
+
+"""
 train_dataset = tf.keras.utils.image_dataset_from_directory(
     path_treinamento,
     labels="inferred",
@@ -54,7 +63,8 @@ train_dataset = tf.keras.utils.image_dataset_from_directory(
     validation_split=0.2,
     seed=321,
     image_size=(img_size[0], img_size[1]),
-    batch_size=batch_size)
+    batch_size=batch_size,
+    shuffle=True)
 
 test_dataset = tf.keras.utils.image_dataset_from_directory(
         path_teste,
@@ -74,18 +84,13 @@ validation_dataset = tf.keras.utils.image_dataset_from_directory(
     validation_split=0.2,
     seed=321,
     image_size=(img_size[0], img_size[1]),
-    batch_size=batch_size)
-
-numero_classes = len(train_dataset.class_names)
+    batch_size=batch_size,
+    shuffle=True)
+"""
+numero_classes = dados_treinamento.num_classes
 
 # Data Augmentation - ImageDataGenerator
-gerador_aumento_dados = ImageDataGenerator(
-    rotation_range=30,  # rotation
-    width_shift_range=0.2,  # horizontal shift
-    height_shift_range=0.2,  # vertical shift
-    zoom_range=0.2,  # zoom
-    horizontal_flip=True  # horizontal flip
-)
+
 
 
 ############################################# MODELO 0 - VGG16 #############################################
@@ -94,30 +99,32 @@ vgg16Model = ModeloTransferLearning().novaredevgg16(numero_classes)
 #resumo das camadas do modelo
 vgg16Model.summary()
 # Treinando o modelo
-hist_vgg16 = vgg16Model.fit(train_dataset,
-                            steps_per_epoch=image_count // batch_size,
+hist_vgg16 = vgg16Model.fit(dados_treinamento,
                             epochs=epochs,
-                            validation_data=validation_dataset,
-                            validation_steps=65 // batch_size,
+                            validation_data=dados_validacao,
+                            validation_steps= dados_validacao.__len__() // batch_size,
+                            validation_split=0.2
                             )
 
 vgg16Model.save_weights("pesosvgg16.h5")
 
 ##matriz de confusao
-predicao_vgg16 = vgg16Model.predict(test_dataset)
+predicao_vgg16 = vgg16Model.predict(dados_teste)
 
 test_pred = np.argmax(predicao_vgg16, axis=1)
 
-test_labels = np.concatenate([y for x, y in test_dataset], axis=0)
+#test_labels = np.concatenate([y for x, y in dados_teste], axis=0)
 
-test_labels = np.argmax(test_labels.__array__(), axis=1)
+#test_labels = np.argmax(test_labels.__array__(), axis=1)
+
+test_labels = dados_teste.classes
 
 # Relatorio metrico
-print(classification_report(test_labels, test_pred, labels=test_dataset.class_names, zero_division=0))
+print(classification_report(test_labels, test_pred, labels=nome_classes, zero_division=0))
 
 # Calcular the confusion matrix using sklearn.metrics
 cm = sklearn.metrics.confusion_matrix(test_labels, test_pred)
-figure, plt = MatrizConfusao.plot_confusion_matrix(cm, class_names=test_dataset.class_names)
+figure, plt = MatrizConfusao.plot_confusion_matrix(cm, class_names=nome_classes)
 figure.savefig('logs/matrizConfusaoVGG16.png', format='png')
 plt.close(figure)
 
@@ -129,7 +136,7 @@ plt.plot(hist_vgg16.history["val_precision"], label="Dados de Validação")
 plt.legend()
 plt.xlabel('Epoch')
 plt.ylabel('Precisão')
-figure.savefig('logs/precisaoVGG16', format='png')
+figure.savefig('logs/precisaoVGG16.png', format='png')
 plt.close(figure)
 
 # Accuracy and Validation Accuracy
@@ -140,7 +147,7 @@ plt.plot(hist_vgg16.history["val_accuracy"], label="Dados de Validação")
 plt.legend()
 plt.xlabel('Epoch')
 plt.ylabel('Acurácia')
-figure.savefig('logs/acuraciaVGG16', format='png')
+figure.savefig('logs/acuraciaVGG16.png', format='png')
 plt.close(figure)
 plt.show()
 
@@ -152,24 +159,28 @@ vgg19Model = ModeloTransferLearning().novaredevgg19(numero_classes)
 #resumo das camadas do modelo
 vgg19Model.summary()
 # Treinando o modelo
-hist_vgg19 = vgg19Model.fit(train_dataset,
-                            steps_per_epoch=image_count // batch_size,
+hist_vgg19 = vgg19Model.fit(dados_treinamento,
                             epochs=epochs,
-                            validation_data=validation_dataset,
-                            validation_steps=65 // batch_size)
+                            validation_data=dados_validacao,
+                            validation_steps=dados_validacao.__len__() // batch_size,
+                            validation_split=0.2)
 
 vgg19Model.save_weights("pesosvgg19.h5")
 
 ##matriz de confusao
-predicao_vgg19 = vgg19Model.predict(test_dataset, batch_size=batch_size)
+predicao_vgg19 = vgg19Model.predict(dados_teste, batch_size=batch_size)
 test_pred = np.argmax(predicao_vgg19, axis=1)
-test_labels = np.concatenate([y for x, y in test_dataset], axis=0)
-test_labels = np.argmax(test_labels, axis=1)
+
+#test_labels = np.concatenate([y for x, y in dados_teste], axis=0)
+#test_labels = np.argmax(test_labels, axis=1)
+
+test_labels = dados_teste.classes
+
 #Relatorio
-print(classification_report(test_labels, test_pred, labels=test_dataset.class_names, zero_division=0))
+print(classification_report(test_labels, test_pred, labels=nome_classes, zero_division=0))
 # Calcular the confusion matrix using sklearn.metrics
 cm = sklearn.metrics.confusion_matrix(test_labels, test_pred)
-figure, plt = MatrizConfusao.plot_confusion_matrix(cm, class_names=test_dataset.class_names)
+figure, plt = MatrizConfusao.plot_confusion_matrix(cm, class_names=nome_classes)
 figure.savefig('logs/matrizConfusaoVGG19.png', format='png')
 plt.close(figure)
 
@@ -190,7 +201,7 @@ plt.title('Acurácia VGG-16')
 plt.legend()
 plt.xlabel('Epoch')
 plt.ylabel('Acurácia')
-figure.savefig('logs/acuraciaVGG19', format='png')
+figure.savefig('logs/acuraciaVGG19.png', format='png')
 plt.close(figure)
 plt.show()
 ############################################# MODELO 1 - VGG19 #############################################
@@ -235,4 +246,4 @@ modelo2.build(input_shape=(image_count, img_size[0], img_size[1], 3))
 
 modelo2.summary()
 
-history2 = modelo2.fit(train_dataset, validation_data=validation_dataset, epochs=epochs, )
+history2 = modelo2.fit(dados_treinamento, validation_data=dados_validacao, epochs=epochs, )

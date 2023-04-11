@@ -40,6 +40,7 @@ class ModeloTransferLearning(object):
             layers.trainable = False
 
         # Classes customizadas na ultima camada
+
         vgg19model.add(Dense(numero_classes, activation="softmax", name="predicao_vgg19"))
 
         vgg19model.compile(loss="categorical_crossentropy",
