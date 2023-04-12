@@ -18,12 +18,12 @@ def plot_confusion_matrix(cm, class_names):
        class_names (array, shape = [n]): String names of the integer classes
     """
 
-    figure = plt.figure(figsize=(8, 8))
+    figure = plt.figure(figsize=(6, 6))
     plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
     plt.title("Matriz de Confusão")
     plt.colorbar()
     tick_marks = np.arange(len(class_names))
-    plt.xticks(tick_marks, class_names, rotation=60)
+    plt.xticks(tick_marks, class_names, rotation=80)
     plt.yticks(tick_marks, class_names)
 
     # Normalize the confusion matrix.
@@ -36,9 +36,9 @@ def plot_confusion_matrix(cm, class_names):
         color = "white" if cm[i, j] > threshold else "black"
         plt.text(j, i, cm[i, j], horizontalalignment="center", color=color)
 
-    plt.tight_layout()
     plt.ylabel('Rótulo Verdadeiro')
     plt.xlabel('Rotulo Previsto')
+    plt.tight_layout()
     return figure, plt
 
 
@@ -66,22 +66,3 @@ def plot_to_image(figure):
     image = tf.expand_dims(image, 0)
 
     return image
-
-
-def log_confusion_matrix(modelo, test_dataset, batch_size):
-    # Use the model to predict the values from the test_images.
-    test_pred_raw = modelo.predict(test_dataset, batch_size=batch_size)
-
-    test_pred = np.argmax(test_pred_raw, axis=1)
-
-    test_labels = np.concatenate(list(test_dataset.map(lambda x, y: y)))
-
-    # Calculate the confusion matrix using sklearn.metrics
-    cm = sklearn.metrics.confusion_matrix(test_labels, test_pred)
-
-    figure = plot_confusion_matrix(cm, class_names=test_dataset.class_names)
-    cm_image = plot_to_image(figure)
-
-    # Log the confusion matrix as an image summary.
-    with file_writer_cm.as_default():
-        tf.summary.image("Confusion Matrix", cm_image, step=epoch)

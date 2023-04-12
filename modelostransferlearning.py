@@ -1,3 +1,4 @@
+import keras
 import tensorflow as tf
 from keras_preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
@@ -24,7 +25,7 @@ class ModeloTransferLearning(object):
 
         vgg16model.compile(loss="categorical_crossentropy",
                            optimizer="rmsprop",
-                           metrics=["accuracy", tf.keras.metrics.Precision(), tf.keras.metrics.Recall()])
+                           metrics=['accuracy', keras.metrics.Precision(), keras.metrics.Recall()])
         return vgg16model
 
     def novaredevgg19(self, numero_classes):
@@ -45,5 +46,5 @@ class ModeloTransferLearning(object):
 
         vgg19model.compile(loss="categorical_crossentropy",
                            optimizer="rmsprop",
-                           metrics=["accuracy", tf.keras.metrics.Precision(), tf.keras.metrics.Recall()])
+                           metrics=['accuracy', keras.metrics.Precision(), keras.metrics.Recall()])
         return vgg19model
